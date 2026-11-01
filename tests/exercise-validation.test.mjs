@@ -37,8 +37,12 @@ test('exercise metadata passes structural and safety validation', () => {
   assert.doesNotThrow(() => validateExercise(repositoryRoot));
 });
 
+test('repository architecture plan passes step one grading', () => {
+  assert.doesNotThrow(() => checks['step1-architecture'](repositoryRoot));
+});
+
 test('starter scaffold does not pass learner grading before implementation', () => {
-  for (const name of ['step1-architecture', 'step2-data', 'step3-api', 'step4-frontend']) {
+  for (const name of ['step2-data', 'step3-api', 'step4-frontend']) {
     assert.throws(() => checks[name](repositoryRoot));
   }
 });
@@ -213,8 +217,9 @@ test('workflow-level write permissions are rejected', () => {
 
 test('step one requires a completed architecture plan', () => {
   const root = copyAll();
-  assert.throws(() => checks['step1-architecture'](root), /Architecture plan must complete/);
   const architecture = path.join(root, 'docs/architecture.md');
+  fs.writeFileSync(architecture, fs.readFileSync(architecture, 'utf8').replaceAll(/^- (.*(?:decision|approach)):.*$/gm, '- $1:'));
+  assert.throws(() => checks['step1-architecture'](root), /Architecture plan must complete/);
   fs.writeFileSync(architecture, fs.readFileSync(architecture, 'utf8').replaceAll('decision:', 'decision: keep boundaries clear').replaceAll('approach:', 'approach: implement from tests'));
   assert.doesNotThrow(() => checks['step1-architecture'](root));
 });
