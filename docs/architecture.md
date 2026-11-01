@@ -35,11 +35,6 @@ Implement and validate team/activity API behavior, including deliberate 4xx resp
 Build the leaderboard from activity points, then implement user-specific workout suggestions and reasons.
 Implement the frontend fetch/render states against those API contracts.
 
-- Activity tracking approach:
-- Team management approach:
-- Leaderboard approach:
-- Workout suggestions approach:
-
 ## Test plan
 
 Record the commands you run and what each failure means.
