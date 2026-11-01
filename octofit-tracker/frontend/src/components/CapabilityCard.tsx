@@ -4,7 +4,7 @@ import { getJson } from '../api/client.js';
 type Props<T> = {
   title: string;
   description: string;
-  endpoint: string;
+  load: () => Promise<Record<string, unknown>>;
   collection: string;
   emptyMessage: string;
   renderItem: (item: T) => ReactNode;
@@ -15,12 +15,12 @@ type ViewState<T> =
   | { status: 'error' }
   | { status: 'success'; items: T[] };
 
-export function CapabilityCard<T>({ title, description, endpoint, collection, emptyMessage, renderItem }: Props<T>) {
+export function CapabilityCard<T>({ title, description, load, collection, emptyMessage, renderItem }: Props<T>) {
   const [state, setState] = useState<ViewState<T>>({ status: 'loading' });
 
   useEffect(() => {
     let active = true;
-    getJson<Record<string, unknown>>(endpoint)
+    load()
       .then((data) => {
         const items = data[collection];
         if (!Array.isArray(items)) throw new Error(`Missing ${collection} response`);
@@ -30,7 +30,7 @@ export function CapabilityCard<T>({ title, description, endpoint, collection, em
         if (active) setState({ status: 'error' });
       });
     return () => { active = false; };
-  }, [collection, endpoint]);
+  }, [collection, load]);
 
   return <section className="card h-100"><div className="card-body">
     <h2 className="h4">{title}</h2>
