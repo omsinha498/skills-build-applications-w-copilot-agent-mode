@@ -30,14 +30,11 @@ OctoFit Tracker is a three-tier application for a school fitness program. The st
 
 Record your plan here before editing code.
 
-Smallest safe implementation order
 Fix only the model schema requirements and defaults; leave the already-passing seed behavior alone.
 Implement and validate team/activity API behavior, including deliberate 4xx responses for invalid or missing references.
 Build the leaderboard from activity points, then implement user-specific workout suggestions and reasons.
 Implement the frontend fetch/render states against those API contracts.
-- Presentation tier decision:
-- Logic tier decision:
-- Data tier decision:
+
 - Activity tracking approach:
 - Team management approach:
 - Leaderboard approach:
