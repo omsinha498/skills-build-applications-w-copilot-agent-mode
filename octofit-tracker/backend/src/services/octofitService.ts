@@ -39,16 +39,65 @@ export async function listTeams() {
   return Team.find().lean();
 }
 
-export async function createTeam(_input: unknown) {
-  throw Object.assign(new Error('Team validation is not implemented yet'), { status: 501 });
+export async function createTeam(input: unknown) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    throw Object.assign(new Error('Team input must be an object'), { status: 400 });
+  }
+  const { name, mascot, members = [] } = input as Record<string, unknown>;
+  if (
+    typeof name !== 'string' || !name.trim() ||
+    typeof mascot !== 'string' || !mascot.trim() ||
+    !Array.isArray(members) ||
+    !members.every((member) => typeof member === 'string' && isObjectIdOrHexString(member))
+  ) {
+    throw Object.assign(new Error('Valid name, mascot, and member IDs are required'), { status: 400 });
+  }
+  return Team.create({ name: name.trim(), mascot: mascot.trim(), members });
 }
 
 export async function getLeaderboard() {
-  return [];
+  const entries = await Activity.aggregate<{ teamName: string; totalPoints: number }>([
+    { $group: { _id: '$team', totalPoints: { $sum: '$points' } } },
+    {
+      $lookup: {
+        from: Team.collection.name,
+        localField: '_id',
+        foreignField: '_id',
+        as: 'team',
+      },
+    },
+    { $unwind: '$team' },
+    { $project: { _id: 0, teamName: '$team.name', totalPoints: 1 } },
+    { $sort: { totalPoints: -1, teamName: 1 } },
+  ]);
+  return entries.map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
-export async function suggestWorkouts(_userEmail: string) {
-  return Workout.find().limit(1).lean();
+export async function suggestWorkouts(userEmail: string) {
+  const user = await User.findOne({ email: userEmail }).lean();
+  if (!user) {
+    throw Object.assign(new Error('User not found'), { status: 404 });
+  }
+  const [pattern] = await Activity.aggregate<{ _id: string; totalMinutes: number }>([
+    { $match: { user: user._id } },
+    { $group: { _id: '$type', totalMinutes: { $sum: '$minutes' } } },
+    { $sort: { totalMinutes: -1, _id: 1 } },
+    { $limit: 1 },
+  ]);
+  const activityFocus: Record<string, string> = {
+    run: 'endurance',
+    cycle: 'endurance',
+    walk: 'endurance',
+    swim: 'endurance',
+    strength: 'strength',
+  };
+  const matchedFocus = pattern ? activityFocus[pattern._id] : undefined;
+  const focus = matchedFocus ?? user.fitnessGoal;
+  const reason = matchedFocus
+    ? `Matches your ${pattern._id} activity pattern and ${focus} focus`
+    : `Matches your ${focus} fitness goal`;
+  const workouts = await Workout.find({ focus }).sort({ title: 1 }).lean();
+  return workouts.map((workout) => ({ ...workout, reason }));
 }
 
 export { User };
